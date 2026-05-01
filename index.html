@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SPAGHETTI SLASH — TAIWAN FIMILY</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --fn-blue: #5B9BD5;
+      --fn-yellow: #FFD966;
+      --fn-red: #FF6B6B;
+      --fn-green: #6BCB77;
+      --fn-orange: #FF9A3C;
+      --bg: #0A0E1A;
+      --card: rgba(255,255,255,0.06);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      touch-action: none;
+      user-select: none;
+    }
+
+    /* BG */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* SCREENS */
+    .screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .screen.hidden { display: none; }
+
+    /* START SCREEN */
+    #start-screen {
+      background: rgba(10,14,26,0.92);
+      backdrop-filter: blur(8px);
+    }
+
+    .game-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 10vw, 100px);
+      letter-spacing: 0.06em;
+      line-height: 0.9;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .game-title .slash { color: var(--fn-yellow); }
+    .game-title .sub { font-size: 0.4em; color: var(--fn-blue); display: block; letter-spacing: 0.2em; }
+
+    .game-desc {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+
+    .items-preview {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .item-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .item-emoji { font-size: 32px; line-height: 1; }
+    .item-name { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.05em; }
+    .item-pts {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    .btn-start {
+      padding: 16px 48px;
+      background: var(--fn-yellow);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 0 30px rgba(255,217,102,0.3);
+    }
+
+    .btn-start:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 40px rgba(255,217,102,0.5);
+    }
+
+    .btn-start:active { transform: scale(0.98); }
+
+    /* HUD */
+    #hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      pointer-events: none;
+    }
+
+    .hud-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 0.05em;
+      color: #fff;
+      line-height: 1;
+      text-shadow: 0 0 20px rgba(91,155,213,0.5);
+    }
+
+    .hud-score-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.15em;
+      margin-bottom: 2px;
+    }
+
+    .hud-lives {
+      display: flex;
+      gap: 6px;
+      font-size: 24px;
+    }
+
+    .hud-combo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: var(--fn-yellow);
+      letter-spacing: 0.05em;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(255,217,102,0.6);
+      min-width: 80px;
+    }
+
+    .hud-timer {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 0.05em;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .hud-timer.urgent { color: var(--fn-red); animation: pulse 0.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+
+    /* GAME CANVAS */
+    #game-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      cursor: crosshair;
+    }
+
+    /* SLASH TRAIL */
+    #trail-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    /* SCORE POPUP */
+    .score-popup {
+      position: fixed;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      pointer-events: none;
+      z-index: 30;
+      animation: popUp 0.8s ease forwards;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    @keyframes popUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+    }
+
+    /* GAMEOVER */
+    #gameover-screen {
+      background: rgba(10,14,26,0.95);
+      backdrop-filter: blur(12px);
+    }
+
+    .go-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 8vw, 80px);
+      letter-spacing: 0.08em;
+      color: var(--fn-red);
+      margin-bottom: 0.25rem;
+    }
+
+    .go-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(56px, 10vw, 100px);
+      color: #fff;
+      letter-spacing: 0.05em;
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(91,155,213,0.5);
+    }
+
+    .go-score-label {
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .go-stats {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .go-stat {
+      text-align: center;
+    }
+
+    .go-stat-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: var(--fn-yellow);
+    }
+
+    .go-stat-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.1em;
+    }
+
+    /* LEADERBOARD */
+    .leaderboard {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .lb-title {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--fn-blue);
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+    }
+
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 13px;
+    }
+
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank { width: 24px; color: rgba(255,255,255,0.4); font-weight: 500; text-align: center; flex-shrink: 0; }
+    .lb-rank.gold { color: var(--fn-yellow); }
+    .lb-rank.silver { color: #C0C0C0; }
+    .lb-rank.bronze { color: #CD7F32; }
+    .lb-name { flex: 1; color: rgba(255,255,255,0.8); }
+    .lb-score { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #fff; letter-spacing: 0.05em; }
+    .lb-me { background: rgba(91,155,213,0.15); border-radius: 6px; padding: 0 6px; }
+
+    .name-input-wrap {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .name-input {
+      flex: 1;
+      padding: 11px 16px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .name-input:focus { border-color: var(--fn-blue); }
+    .name-input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .btn-submit {
+      padding: 11px 20px;
+      background: var(--fn-blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .btn-submit:hover { background: #4a87c8; }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-retry {
+      padding: 14px 36px;
+      background: var(--fn-yellow);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .btn-retry:hover { transform: scale(1.04); }
+
+    .btn-home {
+      padding: 14px 36px;
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 50px;
+      font-size: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-home:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+
+    /* COMBO FLASH */
+    #combo-flash {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 72px;
+      color: var(--fn-yellow);
+      text-shadow: 0 0 40px rgba(255,217,102,0.8);
+      pointer-events: none;
+      z-index: 25;
+      opacity: 0;
+      letter-spacing: 0.1em;
+    }
+
+    /* COUNTDOWN */
+    #countdown {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10,14,26,0.9);
+    }
+
+    .countdown-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 200px;
+      color: #fff;
+      animation: countPop 0.8s ease forwards;
+      text-shadow: 0 0 60px rgba(91,155,213,0.5);
+    }
+
+    @keyframes countPop {
+      0% { transform: scale(1.5); opacity: 0; }
+      30% { transform: scale(1); opacity: 1; }
+      70% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.8); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<canvas id="game-canvas"></canvas>
+<canvas id="trail-canvas"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div>
+    <div class="hud-score-label">SCORE</div>
+    <div class="hud-score" id="hud-score">0</div>
+  </div>
+  <div class="hud-combo" id="hud-combo"></div>
+  <div style="text-align:right;">
+    <div class="hud-score-label">TIME</div>
+    <div class="hud-timer" id="hud-timer">60</div>
+  </div>
+</div>
+
+<div id="combo-flash"></div>
+<div id="countdown" class="hidden"></div>
+
+<!-- START SCREEN -->
+<div class="screen" id="start-screen">
+  <div class="game-title">
+    <span class="sub">TAIWAN FIMILY presents</span>
+    SPAGHETTI<br><span class="slash">SLASH</span>
+  </div>
+  <div class="game-desc">
+    劃過麵條、蝦子、番茄來得分<br>
+    小心不要切到炸彈！
+  </div>
+  <div class="items-preview">
+    <div class="item-preview">
+      <div class="item-emoji">🍝</div>
+      <div class="item-name">SPAGHETTI</div>
+      <div class="item-pts" style="background:rgba(255,217,102,0.2);color:var(--fn-yellow);">+10</div>
+    </div>
+    <div class="item-preview">
+      <div class="item-emoji">🦐</div>
+      <div class="item-name">SHRIMP</div>
+      <div class="item-pts" style="background:rgba(255,154,60,0.2);color:var(--fn-orange);">+20</div>
+    </div>
+    <div class="item-preview">
+      <div class="item-emoji">🍅</div>
+      <div class="item-name">TOMATO</div>
+      <div class="item-pts" style="background:rgba(107,203,119,0.2);color:var(--fn-green);">+15</div>
+    </div>
+    <div class="item-preview">
+      <div class="item-emoji">💣</div>
+      <div class="item-name">BOMB</div>
+      <div class="item-pts" style="background:rgba(255,107,107,0.2);color:var(--fn-red);">-1 ❤️</div>
+    </div>
+  </div>
+  <button class="btn-start" onclick="startCountdown()">開始遊戲</button>
+</div>
+
+<!-- GAMEOVER SCREEN -->
+<div class="screen hidden" id="gameover-screen">
+  <div class="go-title">GAME OVER</div>
+  <div class="go-score" id="go-score">0</div>
+  <div class="go-score-label">POINTS</div>
+  <div class="go-stats">
+    <div class="go-stat">
+      <div class="go-stat-val" id="go-cut">0</div>
+      <div class="go-stat-label">切斷數</div>
+    </div>
+    <div class="go-stat">
+      <div class="go-stat-val" id="go-combo">0</div>
+      <div class="go-stat-label">最高連擊</div>
+    </div>
+    <div class="go-stat">
+      <div class="go-stat-val" id="go-miss">0</div>
+      <div class="go-stat-label">Miss</div>
+    </div>
+  </div>
+
+  <div class="name-input-wrap">
+    <input class="name-input" id="player-name" placeholder="輸入你的名字上傳分數" maxlength="12">
+    <button class="btn-submit" onclick="submitScore()">上傳</button>
+  </div>
+
+  <div class="leaderboard">
+    <div class="lb-title">🏆 LEADERBOARD</div>
+    <div id="lb-list"><div style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:1rem;">載入中…</div></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-retry" onclick="startCountdown()">再玩一次</button>
+    <button class="btn-home" onclick="goHome()">回首頁</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://gexcoudliocybhmlziss.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable__XRn__8TPSQdQYJxmCDl2g_JukRY7DE';
+
+  // ===== CANVAS SETUP =====
+  const bgCanvas = document.getElementById('bg-canvas');
+  const bgCtx = bgCanvas.getContext('2d');
+  const gameCanvas = document.getElementById('game-canvas');
+  const ctx = gameCanvas.getContext('2d');
+  const trailCanvas = document.getElementById('trail-canvas');
+  const trailCtx = trailCanvas.getContext('2d');
+
+  let W, H;
+  function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    [bgCanvas, gameCanvas, trailCanvas].forEach(c => { c.width = W; c.height = H; });
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ===== GAME STATE =====
+  let gameRunning = false;
+  let score = 0, lives = 3, timeLeft = 60;
+  let combo = 0, maxCombo = 0, totalCut = 0, totalMiss = 0;
+  let items = [], particles = [];
+  let slashPoints = [];
+  let isSlashing = false;
+  let timerInterval = null;
+  let lastScoreSubmitted = false;
+
+  // ===== ITEM TYPES =====
+  const ITEM_TYPES = [
+    { emoji: '🍝', pts: 10,  size: 52, weight: 5, color: '#FFD966' },
+    { emoji: '🍝', pts: 10,  size: 52, weight: 4, color: '#FFD966' },
+    { emoji: '🦐', pts: 20,  size: 46, weight: 2, color: '#FF9A3C' },
+    { emoji: '🍅', pts: 15,  size: 46, weight: 3, color: '#FF6B6B' },
+    { emoji: '💣', pts: -1,  size: 50, weight: 2, color: '#888', isBomb: true },
+  ];
+
+  // ===== BG ANIMATION =====
+  let bgStars = Array.from({length: 60}, () => ({
+    x: Math.random(), y: Math.random(),
+    r: Math.random() * 1.5 + 0.3,
+    a: Math.random(),
+    speed: Math.random() * 0.005 + 0.002
+  }));
+
+  function drawBg() {
+    bgCtx.fillStyle = '#0A0E1A';
+    bgCtx.fillRect(0, 0, W, H);
+    bgStars.forEach(s => {
+      s.a += s.speed;
+      const alpha = (Math.sin(s.a) + 1) / 2 * 0.6 + 0.1;
+      bgCtx.beginPath();
+      bgCtx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+      bgCtx.fillStyle = `rgba(91,155,213,${alpha})`;
+      bgCtx.fill();
+    });
+  }
+
+  // ===== SPAWN ITEMS =====
+  function spawnItem() {
+    const totalWeight = ITEM_TYPES.reduce((s, t) => s + t.weight, 0);
+    let rand = Math.random() * totalWeight;
+    let type = ITEM_TYPES[0];
+    for (const t of ITEM_TYPES) {
+      rand -= t.weight;
+      if (rand <= 0) { type = t; break; }
+    }
+
+    const x = type.size + Math.random() * (W - type.size * 2);
+    const vy = -(Math.random() * 8 + 12);
+    const vx = (Math.random() - 0.5) * 4;
+    const spin = (Math.random() - 0.5) * 0.1;
+
+    items.push({
+      ...type,
+      x, y: H + type.size,
+      vx, vy, spin,
+      angle: 0,
+      alive: true,
+      scale: 1,
+      sliced: false
+    });
+  }
+
+  // ===== PARTICLES =====
+  function spawnParticles(x, y, color, count = 8) {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+      const speed = Math.random() * 6 + 2;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color,
+        size: Math.random() * 6 + 2,
+        life: 1,
+        decay: Math.random() * 0.03 + 0.02
+      });
+    }
+  }
+
+  // ===== SCORE POPUP =====
+  function showScorePopup(x, y, pts, color) {
+    const el = document.createElement('div');
+    el.className = 'score-popup';
+    el.textContent = (pts > 0 ? '+' : '') + pts;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.color = color;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 800);
+  }
+
+  // ===== COMBO FLASH =====
+  function showComboFlash(text) {
+    const el = document.getElementById('combo-flash');
+    el.textContent = text;
+    el.style.opacity = '1';
+    el.style.animation = 'none';
+    requestAnimationFrame(() => {
+      el.style.animation = 'popUp 0.8s ease forwards';
+    });
+  }
+
+  // ===== SLASH CHECK =====
+  function checkSlash(x1, y1, x2, y2) {
+    items.forEach(item => {
+      if (!item.alive || item.sliced) return;
+      const dx = x2 - x1, dy = y2 - y1;
+      const fx = item.x - x1, fy = item.y - y1;
+      const t = Math.max(0, Math.min(1, (fx * dx + fy * dy) / (dx * dx + dy * dy)));
+      const closestX = x1 + t * dx, closestY = y1 + t * dy;
+      const dist = Math.hypot(closestX - item.x, closestY - item.y);
+
+      if (dist < item.size * 0.55) {
+        item.sliced = true;
+        item.alive = false;
+
+        if (item.isBomb) {
+          lives--;
+          combo = 0;
+          updateHUD();
+          document.getElementById('hud-score').style.color = '#FF6B6B';
+          setTimeout(() => document.getElementById('hud-score').style.color = '#fff', 300);
+          spawnParticles(item.x, item.y, '#888', 12);
+          showScorePopup(item.x, item.y - 20, '💥', '#FF6B6B');
+          if (lives <= 0) endGame();
+        } else {
+          const multiplier = combo >= 5 ? 3 : combo >= 3 ? 2 : 1;
+          const pts = item.pts * multiplier;
+          score += pts;
+          combo++;
+          totalCut++;
+          if (combo > maxCombo) maxCombo = combo;
+
+          if (combo === 3) showComboFlash('COMBO!');
+          else if (combo === 5) showComboFlash('SUPER!');
+          else if (combo >= 8) showComboFlash('FEVER!!');
+
+          spawnParticles(item.x, item.y, item.color, 10);
+          showScorePopup(item.x, item.y - 20, multiplier > 1 ? `+${pts} x${multiplier}` : `+${pts}`, item.color);
+          updateHUD();
+        }
+      }
+    });
+  }
+
+  // ===== HUD =====
+  function updateHUD() {
+    document.getElementById('hud-score').textContent = score.toLocaleString();
+    document.getElementById('hud-timer').textContent = timeLeft;
+    document.getElementById('hud-timer').className = 'hud-timer' + (timeLeft <= 10 ? ' urgent' : '');
+
+    const livesEl = document.querySelector('.hud-lives');
+    if (livesEl) livesEl.textContent = '❤️'.repeat(Math.max(0, lives));
+
+    if (combo >= 3) {
+      document.getElementById('hud-combo').textContent = combo + 'x COMBO';
+    } else {
+      document.getElementById('hud-combo').textContent = '';
+    }
+  }
+
+  // ===== MAIN LOOP =====
+  let spawnTimer = 0;
+  let spawnInterval = 80;
+  let lastTime = 0;
+
+  function gameLoop(ts) {
+    if (!gameRunning) return;
+    const dt = ts - lastTime;
+    lastTime = ts;
+
+    drawBg();
+    ctx.clearRect(0, 0, W, H);
+    trailCtx.clearRect(0, 0, W, H);
+
+    // Spawn
+    spawnTimer += dt;
+    if (spawnTimer > spawnInterval) {
+      spawnTimer = 0;
+      spawnInterval = Math.max(40, 80 - (60 - timeLeft) * 0.5);
+      if (Math.random() > 0.3) spawnItem();
+    }
+
+    // Draw trail
+    if (slashPoints.length > 1) {
+      trailCtx.save();
+      for (let i = 1; i < slashPoints.length; i++) {
+        const t = i / slashPoints.length;
+        const width = t * 6;
+        trailCtx.beginPath();
+        trailCtx.moveTo(slashPoints[i-1].x, slashPoints[i-1].y);
+        trailCtx.lineTo(slashPoints[i].x, slashPoints[i].y);
+        trailCtx.strokeStyle = `rgba(255,255,255,${t * 0.9})`;
+        trailCtx.lineWidth = width;
+        trailCtx.lineCap = 'round';
+        trailCtx.stroke();
+      }
+      trailCtx.restore();
+      slashPoints = slashPoints.slice(-12);
+    }
+
+    // Update & draw items
+    items = items.filter(item => item.y < H + item.size * 2);
+    items.forEach(item => {
+      if (!item.alive) return;
+      item.vy += 0.4;
+      item.x += item.vx;
+      item.y += item.vy;
+      item.angle += item.spin;
+
+      if (item.y > H + item.size && !item.sliced) {
+        if (!item.isBomb) {
+          totalMiss++;
+          combo = 0;
+          updateHUD();
+        }
+        item.alive = false;
+      }
+
+      ctx.save();
+      ctx.translate(item.x, item.y);
+      ctx.rotate(item.angle);
+      ctx.font = `${item.size}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(item.emoji, 0, 0);
+      ctx.restore();
+    });
+
+    // Particles
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.2;
+      p.life -= p.decay;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+      ctx.fill();
+    });
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // ===== INPUT =====
+  function getPos(e) {
+    if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function onSlashStart(e) {
+    if (!gameRunning) return;
+    isSlashing = true;
+    const p = getPos(e);
+    slashPoints = [p];
+  }
+
+  function onSlashMove(e) {
+    if (!gameRunning || !isSlashing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    const prev = slashPoints[slashPoints.length - 1];
+    if (prev) checkSlash(prev.x, prev.y, p.x, p.y);
+    slashPoints.push(p);
+  }
+
+  function onSlashEnd() {
+    isSlashing = false;
+    setTimeout(() => { slashPoints = []; }, 100);
+  }
+
+  gameCanvas.addEventListener('mousedown', onSlashStart);
+  gameCanvas.addEventListener('mousemove', onSlashMove);
+  gameCanvas.addEventListener('mouseup', onSlashEnd);
+  gameCanvas.addEventListener('touchstart', onSlashStart, { passive: false });
+  gameCanvas.addEventListener('touchmove', onSlashMove, { passive: false });
+  gameCanvas.addEventListener('touchend', onSlashEnd);
+
+  // ===== COUNTDOWN =====
+  function startCountdown() {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('gameover-screen').classList.add('hidden');
+    const cd = document.getElementById('countdown');
+    cd.classList.remove('hidden');
+    let n = 3;
+
+    function showNum() {
+      cd.innerHTML = `<div class="countdown-num">${n === 0 ? 'GO!' : n}</div>`;
+      if (n === 0) {
+        setTimeout(() => {
+          cd.classList.add('hidden');
+          startGame();
+        }, 600);
+      } else {
+        n--;
+        setTimeout(showNum, 900);
+      }
+    }
+    showNum();
+  }
+
+  // ===== START GAME =====
+  function startGame() {
+    score = 0; lives = 3; timeLeft = 60;
+    combo = 0; maxCombo = 0; totalCut = 0; totalMiss = 0;
+    items = []; particles = []; slashPoints = [];
+    lastScoreSubmitted = false;
+    gameRunning = true;
+    spawnTimer = 0;
+    spawnInterval = 80;
+
+    document.getElementById('hud').classList.remove('hidden');
+
+    // Add lives display
+    const hud = document.getElementById('hud');
+    if (!hud.querySelector('.hud-lives')) {
+      const livesEl = document.createElement('div');
+      livesEl.className = 'hud-lives';
+      livesEl.innerHTML = '❤️❤️❤️';
+      hud.appendChild(livesEl);
+    }
+
+    updateHUD();
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateHUD();
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // ===== END GAME =====
+  function endGame() {
+    gameRunning = false;
+    clearInterval(timerInterval);
+    document.getElementById('hud').classList.add('hidden');
+
+    document.getElementById('go-score').textContent = score.toLocaleString();
+    document.getElementById('go-cut').textContent = totalCut;
+    document.getElementById('go-combo').textContent = maxCombo;
+    document.getElementById('go-miss').textContent = totalMiss;
+
+    document.getElementById('gameover-screen').classList.remove('hidden');
+    loadLeaderboard();
+  }
+
+  function goHome() {
+    document.getElementById('gameover-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.remove('hidden');
+  }
+
+  // ===== LEADERBOARD =====
+  async function sbFetch(path, options = {}) {
+    const res = await fetch(SUPABASE_URL + path, {
+      ...options,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+    const text = await res.text();
+    try { return JSON.parse(text); } catch(e) { return []; }
+  }
+
+  async function submitScore() {
+    if (lastScoreSubmitted) return;
+    const name = document.getElementById('player-name').value.trim();
+    if (!name) { alert('請輸入名字！'); return; }
+
+    const btn = document.querySelector('.btn-submit');
+    btn.disabled = true;
+    btn.textContent = '上傳中…';
+
+    await sbFetch('/rest/v1/game_scores', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ name, score, max_combo: maxCombo, total_cut: totalCut })
+    });
+
+    lastScoreSubmitted = true;
+    btn.textContent = '✓ 已上傳';
+    loadLeaderboard(name);
+  }
+
+  async function loadLeaderboard(myName = null) {
+    const data = await sbFetch('/rest/v1/game_scores?select=name,score&order=score.desc&limit=10');
+    const list = document.getElementById('lb-list');
+
+    if (!data || !data.length) {
+      list.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:1rem;">還沒有人上傳分數</div>';
+      return;
+    }
+
+    const rankColors = ['gold', 'silver', 'bronze'];
+    list.innerHTML = data.map((row, i) => {
+      const isMe = myName && row.name === myName;
+      return `
+        <div class="lb-row ${isMe ? 'lb-me' : ''}">
+          <div class="lb-rank ${rankColors[i] || ''}">${i === 0 ? '🏆' : i + 1}</div>
+          <div class="lb-name">${row.name}</div>
+          <div class="lb-score">${row.score.toLocaleString()}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== BG LOOP =====
+  function bgLoop() {
+    drawBg();
+    requestAnimationFrame(bgLoop);
+  }
+  bgLoop();
+</script>
+</body>
+</html>
