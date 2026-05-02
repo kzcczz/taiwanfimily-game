@@ -181,6 +181,11 @@
       inset: 0;
       z-index: 5;
       cursor: crosshair;
+      pointer-events: none;
+    }
+
+    #game-canvas.active {
+      pointer-events: all;
     }
 
     /* SLASH TRAIL */
@@ -849,6 +854,7 @@
     gameRunning = true;
     spawnTimer = 0;
     spawnInterval = 80;
+    gameCanvas.classList.add('active');
 
     document.getElementById('hud').classList.remove('hidden');
 
@@ -877,6 +883,7 @@
   function endGame() {
     gameRunning = false;
     clearInterval(timerInterval);
+    gameCanvas.classList.remove('active');
     document.getElementById('hud').classList.add('hidden');
 
     document.getElementById('go-score').textContent = score.toLocaleString();
