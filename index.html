@@ -285,7 +285,7 @@ function updateHUD() {
 
 function gameLoop(ts) {
   if(!running) return;
-  const dt = ts-lastT; lastT=ts;
+  const dt = Math.min(ts-lastT, 50); lastT=ts;
   drawBg();
 
   // Trail
@@ -317,7 +317,8 @@ function gameLoop(ts) {
     ctx.save();
     ctx.translate(item.x,item.y);
     ctx.rotate(item.angle);
-    ctx.font=`${Math.round(item.sz*1.5)}px serif`;
+    ctx.font=`${Math.round(item.sz*1.5)}px Arial, sans-serif`;
+    ctx.fillStyle = 'white';
     ctx.fillText(item.e,0,0);
     ctx.restore();
   });
@@ -332,7 +333,7 @@ function gameLoop(ts) {
     ctx.fill();
   });
 
-  requestAnimationFrame(gameLoop);
+  if(running) requestAnimationFrame(gameLoop);
 }
 
 // Input
@@ -427,9 +428,14 @@ async function loadLB(myName=null){
     </div>`).join('');
 }
 
-// BG always loops; game loop takes over rendering when running
-function bgLoop(){if(!running){drawBg();}requestAnimationFrame(bgLoop);}
-bgLoop();
+// Single main loop
+function mainLoop(ts) {
+  if(!running) {
+    drawBg();
+  }
+  requestAnimationFrame(mainLoop);
+}
+requestAnimationFrame(mainLoop);
 </script>
 </body>
 </html>
