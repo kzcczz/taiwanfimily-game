@@ -179,11 +179,11 @@ let spawnT = 0, spawnInterval = 80, lastT = 0, timerInt = null;
 let submitted = false;
 
 const TYPES = [
-  {e:'🍝',pts:10,sz:50,w:5,col:'#FFD966'},
-  {e:'🍝',pts:10,sz:50,w:4,col:'#FFD966'},
-  {e:'🦐',pts:20,sz:44,w:2,col:'#FF9A3C'},
-  {e:'🍅',pts:15,sz:44,w:3,col:'#FF6B6B'},
-  {e:'💣',pts:0, sz:48,w:2,col:'#888',bomb:true},
+  {e:'🍝',pts:10,sz:64,w:5,col:'#FFD966'},
+  {e:'🍝',pts:10,sz:64,w:4,col:'#FFD966'},
+  {e:'🦐',pts:20,sz:58,w:2,col:'#FF9A3C'},
+  {e:'🍅',pts:15,sz:58,w:3,col:'#FF6B6B'},
+  {e:'💣',pts:0, sz:62,w:2,col:'#888',bomb:true},
 ];
 
 // Stars bg
@@ -317,7 +317,7 @@ function gameLoop(ts) {
     ctx.save();
     ctx.translate(item.x,item.y);
     ctx.rotate(item.angle);
-    ctx.font=`${item.sz}px serif`;
+    ctx.font=`${Math.round(item.sz*1.5)}px serif`;
     ctx.fillText(item.e,0,0);
     ctx.restore();
   });
@@ -427,8 +427,8 @@ async function loadLB(myName=null){
     </div>`).join('');
 }
 
-// BG loop (always running)
-function bgLoop(){drawBg();if(!running)requestAnimationFrame(bgLoop);}
+// BG always loops; game loop takes over rendering when running
+function bgLoop(){if(!running){drawBg();}requestAnimationFrame(bgLoop);}
 bgLoop();
 </script>
 </body>
