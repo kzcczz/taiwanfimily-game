@@ -896,13 +896,17 @@ function updateZoomLabel() {
 
 function renderBoard() {
   const boardEl = document.getElementById('board');
+  const wrap = document.getElementById('board-wrap');
+  // 記住捲動位置，重建 DOM 後還原，避免每次點擊跳回頂端
+  const savedLeft = wrap ? wrap.scrollLeft : 0;
+  const savedTop  = wrap ? wrap.scrollTop  : 0;
+
   const cellSize = cellZoom;
   document.documentElement.style.setProperty('--cell', cellSize+'px');
   boardEl.style.gridTemplateColumns = `repeat(${COLS}, ${cellSize}px)`;
   boardEl.innerHTML = '';
 
   // 棋盤總寬若超過容器，靠左上對齊才能完整捲動
-  const wrap = document.getElementById('board-wrap');
   if(wrap){
     const boardW = COLS*cellSize + (COLS-1)*2 + 8;
     wrap.classList.toggle('overflowing', boardW > wrap.clientWidth);
@@ -939,6 +943,9 @@ function renderBoard() {
 
     boardEl.appendChild(cell);
   }
+
+  // 還原捲動位置
+  if(wrap){ wrap.scrollLeft = savedLeft; wrap.scrollTop = savedTop; }
 }
 
 function startTimer() {
