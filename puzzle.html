@@ -4,88 +4,93 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>拼圖 — TAIWAN FIMILY</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Noto Sans TC',sans-serif;background:#060D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;user-select:none;}
+    :root{
+      --blue:#5B9BD5; --blue-deep:#3D7AB5; --blue-soft:#EAF2FB; --line:#E1ECF7;
+      --bg:#F4F8FC; --ink:#1A2B42; --muted:#6B86A6;
+    }
+    body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;user-select:none;
+      background-image:radial-gradient(ellipse 70% 45% at 50% -5%, rgba(91,155,213,0.16) 0%, transparent 60%);background-attachment:fixed;}
 
-    nav{width:100%;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(91,155,213,0.15);}
-    .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.12em;color:#7BB3D8;}
-    .nav-back{font-size:13px;color:rgba(120,160,200,0.6);text-decoration:none;transition:color 0.2s;}
-    .nav-back:hover{color:#fff;}
+    nav{width:100%;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(255,255,255,0.7);backdrop-filter:blur(12px);}
+    .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.12em;color:var(--blue-deep);}
+    .nav-logo img{filter:brightness(0) saturate(100%) invert(48%) sepia(36%) saturate(710%) hue-rotate(170deg) brightness(91%) contrast(88%);}
+    .nav-back{font-size:13px;color:var(--muted);text-decoration:none;transition:color 0.2s;}
+    .nav-back:hover{color:var(--ink);}
 
     .container{width:100%;max-width:900px;padding:1.5rem 1rem;display:flex;flex-direction:column;align-items:center;gap:1.25rem;}
-
     .top-bar{width:100%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;}
 
-    .title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.08em;color:#F0F4F8;}
-    .title span{color:#5B9BD5;}
+    .title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:0.08em;color:var(--ink);}
+    .title span{color:var(--blue);}
 
     .diff-tabs{display:flex;gap:6px;}
-    .diff-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(91,155,213,0.3);background:transparent;color:rgba(120,160,200,0.7);font-family:inherit;transition:all 0.15s;}
-    .diff-tab.active{background:#5B9BD5;color:#fff;border-color:#5B9BD5;}
-    .diff-tab:hover:not(.active){border-color:#5B9BD5;color:#fff;}
+    .diff-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--muted);font-family:inherit;transition:all 0.15s;}
+    .diff-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+    .diff-tab:hover:not(.active){border-color:var(--blue);color:var(--blue);}
 
     .stats-row{display:flex;gap:1.25rem;flex-wrap:wrap;align-items:center;}
     .stat{text-align:center;}
-    .stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:0.03em;line-height:1;}
-    .stat-val.accent{color:#FFD966;}
-    .stat-label{font-size:10px;letter-spacing:0.15em;color:rgba(120,160,200,0.5);}
+    .stat-val{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--ink);letter-spacing:0.03em;line-height:1;}
+    .stat-val.accent{color:var(--blue-deep);}
+    .stat-label{font-size:10px;letter-spacing:0.15em;color:var(--muted);}
 
-    .btn{font-family:'Bebas Neue',sans-serif;letter-spacing:0.1em;border:none;border-radius:8px;cursor:pointer;font-size:15px;padding:9px 22px;transition:all 0.15s;}
-    .btn-primary{background:#5B9BD5;color:#fff;}
-    .btn-primary:hover{background:#4a87c8;transform:translateY(-1px);}
-    .btn-outline{background:transparent;color:rgba(120,160,200,0.7);border:1px solid rgba(91,155,213,0.3);}
-    .btn-outline:hover{border-color:#5B9BD5;color:#fff;}
+    .btn{font-family:'Bebas Neue',sans-serif;letter-spacing:0.1em;border:none;border-radius:9px;cursor:pointer;font-size:15px;padding:10px 22px;transition:all 0.15s;}
+    .btn-primary{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(91,155,213,0.35);}
+    .btn-primary:hover{background:var(--blue-deep);transform:translateY(-1px);}
+    .btn-outline{background:#fff;color:var(--muted);border:1px solid var(--line);}
+    .btn-outline:hover{border-color:var(--blue);color:var(--blue);}
 
     .game-area{display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;}
 
     .preview-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;}
-    .preview-label{font-size:11px;letter-spacing:0.12em;color:rgba(120,160,200,0.5);}
-    .preview-img{border-radius:10px;border:1px solid rgba(91,155,213,0.2);display:block;}
+    .preview-label{font-size:11px;letter-spacing:0.12em;color:var(--muted);}
+    .preview-img{border-radius:10px;border:1px solid var(--line);display:block;box-shadow:0 4px 14px rgba(91,155,213,0.12);}
 
     .board-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;}
-    .board{display:grid;gap:3px;border-radius:12px;overflow:hidden;border:2px solid rgba(91,155,213,0.2);background:rgba(91,155,213,0.08);padding:3px;cursor:pointer;}
-    .tile{position:relative;border-radius:6px;overflow:hidden;cursor:pointer;transition:transform 0.1s,box-shadow 0.1s;background:#0A1628;}
-    .tile:hover{transform:scale(1.03);box-shadow:0 0 12px rgba(91,155,213,0.4);z-index:2;}
-    .tile.selected{box-shadow:0 0 0 3px #FFD966,0 0 16px rgba(255,217,102,0.4);transform:scale(1.04);z-index:3;}
-    .tile.correct{box-shadow:0 0 0 2px #6BCB77;}
+    .board{display:grid;gap:3px;border-radius:14px;overflow:hidden;border:2px solid #C2D8EE;background:#D2E2F2;padding:3px;cursor:pointer;box-shadow:0 8px 30px rgba(91,155,213,0.18);}
+    .tile{position:relative;border-radius:6px;overflow:hidden;cursor:pointer;transition:transform 0.1s,box-shadow 0.1s;background:#EAF2FB;}
+    .tile:hover{transform:scale(1.03);box-shadow:0 0 12px rgba(91,155,213,0.45);z-index:2;}
+    .tile.selected{box-shadow:0 0 0 3px var(--blue),0 0 16px rgba(91,155,213,0.45);transform:scale(1.04);z-index:3;}
+    .tile.correct{box-shadow:0 0 0 2px #2E8B4E;}
     .tile canvas{display:block;}
 
-    .complete-overlay{position:fixed;inset:0;background:rgba(6,13,26,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(8px);}
+    .complete-overlay{position:fixed;inset:0;background:rgba(26,43,66,0.55);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(8px);}
     .complete-overlay.hidden{display:none;}
-    .complete-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,80px);color:#FFD966;letter-spacing:0.08em;margin-bottom:0.5rem;text-align:center;}
+    .complete-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,80px);color:#fff;letter-spacing:0.08em;margin-bottom:0.5rem;text-align:center;text-shadow:0 4px 24px rgba(91,155,213,0.6);}
     .complete-stats{display:flex;gap:2rem;margin:1rem 0 2rem;flex-wrap:wrap;justify-content:center;}
     .complete-stat{text-align:center;}
     .complete-val{font-family:'Bebas Neue',sans-serif;font-size:40px;color:#fff;}
-    .complete-label{font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.12em;}
-    .complete-img{border-radius:12px;margin-bottom:1.5rem;box-shadow:0 0 40px rgba(91,155,213,0.3);}
+    .complete-label{font-size:11px;color:rgba(255,255,255,0.65);letter-spacing:0.12em;}
+    .complete-img{border-radius:12px;margin-bottom:1.5rem;box-shadow:0 0 40px rgba(91,155,213,0.5);}
     .complete-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
 
-    .lb-section{width:100%;max-width:400px;background:rgba(255,255,255,0.04);border:1px solid rgba(91,155,213,0.15);border-radius:14px;padding:1.25rem;}
+    .lb-section{width:100%;max-width:400px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.25rem;box-shadow:0 4px 16px rgba(91,155,213,0.08);}
     .lb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
-    .lb-title{font-size:12px;letter-spacing:0.15em;color:#5B9BD5;font-weight:500;}
+    .lb-title{font-size:12px;letter-spacing:0.15em;color:var(--blue-deep);font-weight:700;}
     .lb-tabs{display:flex;gap:4px;}
-    .lb-tab{padding:3px 10px;border-radius:12px;font-size:11px;cursor:pointer;border:1px solid rgba(91,155,213,0.2);background:transparent;color:rgba(120,160,200,0.6);font-family:inherit;transition:all 0.12s;}
-    .lb-tab.active{background:rgba(91,155,213,0.2);color:#7BB3D8;}
-    .lb-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;}
+    .lb-tab{padding:3px 10px;border-radius:12px;font-size:11px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--muted);font-family:inherit;transition:all 0.12s;}
+    .lb-tab.active{background:var(--blue-soft);color:var(--blue-deep);border-color:var(--blue);}
+    .lb-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #EEF3F8;font-size:13px;}
     .lb-row:last-child{border:none;}
-    .lb-rank{width:22px;text-align:center;color:rgba(255,255,255,0.3);font-size:12px;flex-shrink:0;}
-    .lb-name{flex:1;color:rgba(255,255,255,0.8);}
-    .lb-val{font-family:'Bebas Neue',sans-serif;font-size:17px;color:#fff;letter-spacing:0.03em;}
-    .lb-diff{font-size:10px;color:rgba(120,160,200,0.5);margin-left:4px;}
-    .lb-me{background:rgba(91,155,213,0.1);border-radius:6px;padding:0 4px;}
+    .lb-rank{width:22px;text-align:center;color:var(--muted);font-size:12px;flex-shrink:0;}
+    .lb-name{flex:1;color:var(--ink);}
+    .lb-val{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--blue-deep);letter-spacing:0.03em;}
+    .lb-diff{font-size:10px;color:var(--muted);margin-left:4px;}
+    .lb-me{background:var(--blue-soft);border-radius:6px;padding:0 4px;}
 
-    .name-modal{position:fixed;inset:0;background:rgba(6,13,26,0.85);display:flex;align-items:center;justify-content:center;z-index:200;padding:1.5rem;backdrop-filter:blur(8px);}
+    .name-modal{position:fixed;inset:0;background:rgba(26,43,66,0.4);display:flex;align-items:center;justify-content:center;z-index:200;padding:1.5rem;backdrop-filter:blur(8px);}
     .name-modal.hidden{display:none;}
-    .name-card{background:#0D1E38;border:1px solid rgba(91,155,213,0.25);border-radius:16px;padding:2rem;width:100%;max-width:360px;}
-    .name-card-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.08em;margin-bottom:0.4rem;}
-    .name-card-sub{font-size:13px;color:rgba(120,160,200,0.6);margin-bottom:1.25rem;}
-    .name-input{width:100%;padding:11px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(91,155,213,0.25);border-radius:10px;color:#fff;font-size:15px;font-family:inherit;outline:none;margin-bottom:10px;}
-    .name-input:focus{border-color:#5B9BD5;}
-    .name-input::placeholder{color:rgba(255,255,255,0.2);}
+    .name-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:2rem;width:100%;max-width:360px;box-shadow:0 24px 60px rgba(26,43,66,0.25);}
+    .name-card-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.08em;margin-bottom:0.4rem;color:var(--ink);}
+    .name-card-sub{font-size:13px;color:var(--muted);margin-bottom:1.25rem;}
+    .name-input{width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-size:15px;font-family:inherit;outline:none;margin-bottom:10px;}
+    .name-input:focus{border-color:var(--blue);}
+    .name-input::placeholder{color:#A9BDD2;}
     .name-btns{display:flex;gap:8px;}
-    .btn-skip{background:transparent;color:rgba(120,160,200,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 18px;font-size:14px;font-family:inherit;cursor:pointer;}
+    .btn-skip{background:#fff;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:10px 18px;font-size:14px;font-family:inherit;cursor:pointer;}
 
     @media(max-width:600px){
       .preview-wrap{display:none;}
@@ -104,8 +109,8 @@
   <div class="top-bar">
     <div class="title"><span>拼圖</span></div>
     <select id="diff-select" onchange="setDiffSelect(this)" style="
-      padding:8px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(91,155,213,0.3);
-      border-radius:8px;color:#fff;font-size:14px;font-family:inherit;outline:none;cursor:pointer;">
+      padding:8px 14px;background:#fff;border:1px solid #E1ECF7;
+      border-radius:9px;color:#1A2B42;font-size:14px;font-family:inherit;outline:none;cursor:pointer;">
       <option value="5">5×5</option>
       <option value="6">6×6</option>
       <option value="7">7×7</option>
@@ -145,7 +150,7 @@
         <button class="lb-tab" onclick="switchLb('moves',this)">最少步</button>
       </div>
     </div>
-    <div id="lb-list"><div style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:0.5rem;">載入中…</div></div>
+    <div id="lb-list"><div style="color:#9DB2C8;font-size:13px;text-align:center;padding:0.5rem;">載入中…</div></div>
   </div>
 
 </div>
@@ -401,7 +406,7 @@ async function loadLB() {
   const order = lbModeActive==='time' ? 'time_sec.asc' : 'moves.asc';
   const data = await sbFetch(`/rest/v1/puzzle_scores?select=name,time_sec,moves,difficulty&order=${order}&limit=10`);
   const el = document.getElementById('lb-list');
-  if(!data||!data.length) { el.innerHTML='<div style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:0.5rem">還沒有記錄</div>'; return; }
+  if(!data||!data.length) { el.innerHTML='<div style="color:#9DB2C8;font-size:13px;text-align:center;padding:0.5rem">還沒有記錄</div>'; return; }
   const medals = ['🥇','🥈','🥉'];
   el.innerHTML = data.map((r,i) => {
     const t = r.time_sec, mm=String(Math.floor(t/60)).padStart(2,'0'), ss=String(t%60).padStart(2,'0');
