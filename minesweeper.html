@@ -222,11 +222,42 @@
 
     /* BOARD */
     .board-wrap {
-      overflow-x: auto;
+      overflow: auto;
       width: 100%;
+      max-height: 70vh;
       display: flex;
       justify-content: center;
+      -webkit-overflow-scrolling: touch;
     }
+    /* 棋盤比容器大時，靠左上對齊才能完整捲到 */
+    .board-wrap.overflowing { justify-content: flex-start; }
+
+    .zoom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .zoom-btn {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--blue-dark);
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s;
+      box-shadow: 0 2px 8px rgba(91,155,213,0.1);
+    }
+    .zoom-btn:hover { border-color: var(--blue); background: #EAF2FB; }
+    .zoom-btn:active { transform: scale(0.94); }
+    .zoom-label { font-size: 12px; color: var(--muted); min-width: 88px; text-align: center; }
 
     .board {
       display: inline-grid;
@@ -234,9 +265,9 @@
       background: #D2E2F2;
       border: 2px solid #C2D8EE;
       border-radius: 10px;
-      overflow: hidden;
       padding: 2px;
       box-shadow: 0 8px 30px rgba(91,155,213,0.18);
+      flex-shrink: 0;
     }
 
     .cell {
@@ -505,8 +536,15 @@
     </div>
   </div>
 
+  <!-- ZOOM -->
+  <div class="zoom-bar">
+    <button class="zoom-btn" onclick="zoomBoard(-1)" aria-label="縮小">−</button>
+    <span class="zoom-label" id="zoom-label">格子大小</span>
+    <button class="zoom-btn" onclick="zoomBoard(1)" aria-label="放大">+</button>
+  </div>
+
   <!-- BOARD -->
-  <div class="board-wrap">
+  <div class="board-wrap" id="board-wrap">
     <div class="board" id="board"></div>
   </div>
 
@@ -585,6 +623,9 @@ const MAX_REVIVALS = 3;
 let pendingMine = null;     // 待處理的地雷座標 {r,c}
 let quizPool = [];          // 題庫快取
 let currentQuiz = null;     // 當前題目
+// 格子像素大小（手機預設較大，方便點按；桌機維持原本 32）
+let cellZoom = (window.innerWidth < 600) ? 38 : 32;
+const CELL_MIN = 22, CELL_MAX = 64, CELL_STEP = 6;
 
 function setPreset(c, r, m, btn) {
   document.getElementById('inp-cols').value = c;
@@ -842,14 +883,32 @@ function checkWin() {
   }
 }
 
+function zoomBoard(dir) {
+  cellZoom = Math.max(CELL_MIN, Math.min(CELL_MAX, cellZoom + dir*CELL_STEP));
+  updateZoomLabel();
+  renderBoard();
+}
+
+function updateZoomLabel() {
+  const el = document.getElementById('zoom-label');
+  if(el) el.textContent = '格子 ' + cellZoom + 'px';
+}
+
 function renderBoard() {
   const boardEl = document.getElementById('board');
-  const cellSize = Math.min(32, Math.floor((window.innerWidth - 32) / COLS));
+  const cellSize = cellZoom;
   document.documentElement.style.setProperty('--cell', cellSize+'px');
   boardEl.style.gridTemplateColumns = `repeat(${COLS}, ${cellSize}px)`;
   boardEl.innerHTML = '';
 
-  const fontSize = Math.max(10, Math.min(14, cellSize - 10));
+  // 棋盤總寬若超過容器，靠左上對齊才能完整捲動
+  const wrap = document.getElementById('board-wrap');
+  if(wrap){
+    const boardW = COLS*cellSize + (COLS-1)*2 + 8;
+    wrap.classList.toggle('overflowing', boardW > wrap.clientWidth);
+  }
+
+  const fontSize = Math.max(10, Math.min(20, cellSize - 12));
 
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
     const cell = document.createElement('div');
@@ -959,6 +1018,7 @@ async function loadLB() {
 }
 
 // Init
+updateZoomLabel();
 newGame();
 loadLB();
 </script>
