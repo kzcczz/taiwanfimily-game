@@ -404,6 +404,60 @@
     .lb-name { flex: 1; color: var(--text); }
     .lb-time { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; color: #3D7AB5; }
     .lb-diff { font-size: 10px; color: var(--muted); margin-left: 4px; }
+
+    /* QUIZ / REVIVAL MODAL */
+    .quiz-card { max-width: 420px; }
+    .quiz-head { text-align: center; margin-bottom: 1.25rem; }
+    .quiz-icon { font-size: 40px; margin-bottom: 0.5rem; }
+    .quiz-title { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 0.04em; color: #1A2B42; }
+    .quiz-lives {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-size: 12px;
+      font-weight: 700;
+      color: #3D7AB5;
+      background: #EAF2FB;
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+    .quiz-question {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1A2B42;
+      line-height: 1.6;
+      text-align: center;
+      margin-bottom: 1.25rem;
+      min-height: 1.6em;
+    }
+    .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+    .quiz-option {
+      width: 100%;
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      font-weight: 500;
+      color: #1A2B42;
+      background: #F4F8FC;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: var(--blue); background: #EAF2FB; }
+    .quiz-option:disabled { cursor: default; }
+    .quiz-option.correct { border-color: #2E8B4E; background: #E4F4E9; color: #2E8B4E; font-weight: 700; }
+    .quiz-option.wrong { border-color: #D9453C; background: #FBE6E4; color: #D9453C; font-weight: 700; }
+    .quiz-loading { text-align: center; color: var(--muted); font-size: 13px; padding: 1rem; }
+    .quiz-feedback {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      min-height: 1.4em;
+      margin-top: 1rem;
+    }
+    .quiz-feedback.ok { color: #2E8B4E; }
+    .quiz-feedback.bad { color: #D9453C; }
   </style>
 </head>
 <body>
@@ -498,6 +552,20 @@
   </div>
 </div>
 
+<!-- QUIZ / REVIVAL MODAL -->
+<div class="modal-overlay hidden" id="quiz-modal">
+  <div class="modal quiz-card">
+    <div class="quiz-head">
+      <div class="quiz-icon">💣</div>
+      <div class="quiz-title">踩到地雷！答對即可復活</div>
+      <div class="quiz-lives" id="quiz-lives"></div>
+    </div>
+    <div class="quiz-question" id="quiz-question"></div>
+    <div class="quiz-options" id="quiz-options"></div>
+    <div class="quiz-feedback" id="quiz-feedback"></div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://gexcoudliocybhmlziss.supabase.co';
 const SUPABASE_KEY = 'sb_publishable__XRn__8TPSQdQYJxmCDl2g_JukRY7DE';
@@ -512,6 +580,11 @@ let firstClick = true;
 let finalTime = 0;
 let lbFilter = 'all';
 let scoreSubmitted = false;
+let revivalsUsed = 0;       // 累計已用復活次數
+const MAX_REVIVALS = 3;
+let pendingMine = null;     // 待處理的地雷座標 {r,c}
+let quizPool = [];          // 題庫快取
+let currentQuiz = null;     // 當前題目
 
 function setPreset(c, r, m, btn) {
   document.getElementById('inp-cols').value = c;
@@ -534,6 +607,8 @@ function newGame() {
   gameState = 'idle';
   firstClick = true;
   scoreSubmitted = false;
+  revivalsUsed = 0;
+  pendingMine = null;
   board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
   revealed = Array(ROWS).fill(null).map(() => Array(COLS).fill(false));
   flagged = Array(ROWS).fill(null).map(() => Array(COLS).fill(false));
@@ -569,7 +644,7 @@ function placeMines(safeR, safeC) {
 }
 
 function handleClick(r, c) {
-  if(gameState==='won'||gameState==='lost') return;
+  if(gameState==='won'||gameState==='lost'||gameState==='quiz') return;
   if(flagged[r][c]) return;
   if(revealed[r][c]) { chordClick(r,c); return; }
 
@@ -582,7 +657,7 @@ function handleClick(r, c) {
 
   if(minePos.has(r*COLS+c)) {
     revealed[r][c] = true;
-    gameOver(r, c);
+    hitMine(r, c);
     return;
   }
 
@@ -593,7 +668,7 @@ function handleClick(r, c) {
 
 function handleRightClick(e, r, c) {
   e.preventDefault();
-  if(gameState==='won'||gameState==='lost') return;
+  if(gameState==='won'||gameState==='lost'||gameState==='quiz') return;
   if(revealed[r][c]) return;
   flagged[r][c] = !flagged[r][c];
   updateHUD();
@@ -611,7 +686,7 @@ function chordClick(r, c) {
   for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) {
     const nr=r+dr, nc=c+dc;
     if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!flagged[nr][nc]&&!revealed[nr][nc]) {
-      if(minePos.has(nr*COLS+nc)) { revealed[nr][nc]=true; gameOver(nr,nc); return; }
+      if(minePos.has(nr*COLS+nc)) { revealed[nr][nc]=true; hitMine(nr,nc); return; }
       flood(nr, nc);
     }
   }
@@ -626,6 +701,101 @@ function flood(r, c) {
   if(board[r][c] === 0) {
     for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) flood(r+dr, c+dc);
   }
+}
+
+function hitMine(hitR, hitC) {
+  // 還有復活機會 → 跳答題
+  if(revivalsUsed < MAX_REVIVALS) {
+    pendingMine = { r: hitR, c: hitC };
+    gameState = 'quiz';
+    stopTimer();
+    document.getElementById('face-btn').textContent = '😨';
+    renderBoard();
+    showQuiz();
+  } else {
+    gameOver(hitR, hitC);
+  }
+}
+
+async function showQuiz() {
+  const modal = document.getElementById('quiz-modal');
+  const optsEl = document.getElementById('quiz-options');
+  const qEl = document.getElementById('quiz-question');
+  const feedEl = document.getElementById('quiz-feedback');
+  const livesEl = document.getElementById('quiz-lives');
+
+  feedEl.textContent = '';
+  feedEl.className = 'quiz-feedback';
+  optsEl.innerHTML = '<div class="quiz-loading">載入題目中…</div>';
+  livesEl.textContent = '剩餘復活機會：' + (MAX_REVIVALS - revivalsUsed) + ' / ' + MAX_REVIVALS;
+  modal.classList.remove('hidden');
+
+  // 載入題庫（只抓一次，之後快取）
+  if(!quizPool.length) {
+    const data = await sbFetch('/rest/v1/quiz_questions?select=question,options,answer');
+    if(Array.isArray(data)) quizPool = data.filter(q => q && Array.isArray(q.options) && q.options.length);
+  }
+
+  if(!quizPool.length) {
+    // 沒題目可用 → 不卡關，直接結束
+    modal.classList.add('hidden');
+    if(pendingMine) gameOver(pendingMine.r, pendingMine.c);
+    return;
+  }
+
+  currentQuiz = quizPool[Math.floor(Math.random() * quizPool.length)];
+  qEl.textContent = currentQuiz.question;
+  optsEl.innerHTML = '';
+  currentQuiz.options.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = opt;
+    btn.onclick = () => answerQuiz(idx, btn);
+    optsEl.appendChild(btn);
+  });
+}
+
+function answerQuiz(idx, btn) {
+  const optsEl = document.getElementById('quiz-options');
+  const feedEl = document.getElementById('quiz-feedback');
+  // 鎖定所有選項，避免重複點
+  optsEl.querySelectorAll('.quiz-option').forEach(b => b.disabled = true);
+
+  const correct = idx === currentQuiz.answer;
+  // 標示正解與誤選
+  optsEl.querySelectorAll('.quiz-option').forEach((b, i) => {
+    if(i === currentQuiz.answer) b.classList.add('correct');
+    else if(i === idx) b.classList.add('wrong');
+  });
+
+  if(correct) {
+    revivalsUsed++;
+    feedEl.textContent = '✓ 答對了！復活成功';
+    feedEl.className = 'quiz-feedback ok';
+    setTimeout(reviveAndResume, 900);
+  } else {
+    feedEl.textContent = '✗ 答錯了…';
+    feedEl.className = 'quiz-feedback bad';
+    setTimeout(() => {
+      document.getElementById('quiz-modal').classList.add('hidden');
+      if(pendingMine) gameOver(pendingMine.r, pendingMine.c);
+    }, 1100);
+  }
+}
+
+function reviveAndResume() {
+  document.getElementById('quiz-modal').classList.add('hidden');
+  if(pendingMine) {
+    // 收回剛剛踩開的地雷，自動插旗保護
+    revealed[pendingMine.r][pendingMine.c] = false;
+    flagged[pendingMine.r][pendingMine.c] = true;
+    pendingMine = null;
+  }
+  gameState = 'playing';
+  document.getElementById('face-btn').textContent = '🙂';
+  startTimer();
+  updateHUD();
+  renderBoard();
 }
 
 function gameOver(hitR, hitC) {
